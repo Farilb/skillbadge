@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillBadge — Mon Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter',sans-serif; background: linear-gradient(160deg,#0f2027 0%,#203a43 50%,#2c5364 100%); min-height: 100vh; }
+
+header {
+  background: rgba(0,0,0,.3); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 960px; margin: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; gap: 12px; flex-wrap: wrap;
+}
+.logo { font-family: 'Manrope',sans-serif; font-weight: 800; font-size: 19px; color: #fff; }
+.role-pill { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 700; color: #fff; }
+
+main { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
+
+.glass-card { background: rgba(255,255,255,.93); border-radius: 22px; padding: 24px; margin-bottom: 18px; box-shadow: 0 8px 40px rgba(0,0,0,.2); }
+.glass-search { background: rgba(255,255,255,.12); backdrop-filter: blur(8px); border-radius: 18px; padding: 18px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,.2); }
+
+.field-input { width: 100%; padding: 11px 14px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; outline: none; transition: border-color .2s; font-family: 'Inter',sans-serif; background: #fff; }
+.field-input:focus { border-color: #006B3F; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px; }
+.stat-card { background: rgba(255,255,255,.9); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,.12); }
+.stat-val { font-size: 26px; font-weight: 900; color: #FFB300; }
+.stat-label { font-size: 12px; color: #374151; margin-top: 4px; }
+
+/* DOMAIN JOURNEY */
+.domain-card { background: #fff; border-radius: 18px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 14px rgba(0,0,0,.07); }
+.level-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; }
+.level-row + .level-row { border-top: 1px dashed #f1f5f9; }
+.lvl-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.lvl-dot.done   { background: #006B3F; color: #fff; box-shadow: 0 0 0 3px rgba(0,107,63,.15); }
+.lvl-dot.active { background: #FFB300; color: #1a1a2e; box-shadow: 0 0 0 4px rgba(255,179,0,.25); }
+.lvl-dot.locked { background: #f1f5f9; color: #cbd5e1; border: 2px dashed #e5e7eb; }
+.prog-bar { height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 999px; transition: width .7s ease; }
+
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.p-deb   { background: #e3f2fd; color: #1565c0; }
+.p-inter { background: #fff3e0; color: #e65100; }
+.p-exp   { background: #e8f5e9; color: #1b5e20; }
+
+/* BADGE CARDS */
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(175px,1fr)); gap: 12px; }
+.badge-card { background: #fafafa; border-radius: 14px; padding: 16px; text-align: center; }
+
+/* MODAL PARTAGE */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal-box { background: #fff; border-radius: 22px; padding: 28px; width: min(420px,96vw); max-height: 90vh; overflow-y: auto; }
+.share-btn { display: flex; align-items: center; gap: 14px; width: 100%; padding: 15px 18px; border-radius: 14px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; transition: transform .15s,box-shadow .15s; }
+.share-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.share-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+
+#notif { position: fixed; bottom: 22px; right: 22px; z-index: 99999; display: none; }
+.notif-box { padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 24px rgba(0,0,0,.3); color: #fff; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.fade-in { animation: fadeIn .3s ease both; }
+@keyframes pop { 0%{transform:scale(.8);opacity:0} 80%{transform:scale(1.04)} 100%{transform:scale(1);opacity:1} }
+.pop-in { animation: pop .4s cubic-bezier(.4,0,.2,1) both; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">Skill<span style="color:#FFB300;">Badge</span> <span style="font-size:11px;font-family:monospace;color:rgba(255,255,255,.4);margin-left:6px;background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;">ERC-5192</span></div>
+    <div class="role-pill">👤 Mon Portfolio</div>
+  </div>
+</header>
+
+<div id="notif"></div>
+
+<main>
+  <!-- Recherche -->
+  <div class="glass-search">
+    <p style="color:#fff;font-weight:600;margin-bottom:10px;font-size:13px;">🔍 Accéder à un profil</p>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="search" class="field-input" placeholder="Tapez un nom d'apprenant…" oninput="onSearch()" style="background:rgba(255,255,255,.95);">
+      <button onclick="clearSearch()" style="background:rgba(255,255,255,.15);color:#fff;padding:10px 14px;border-radius:12px;font-size:13px;border:1px solid rgba(255,255,255,.2);cursor:pointer;">✕</button>
+    </div>
+    <div id="search-results" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- Profil -->
+  <div class="glass-card" id="profile" style="text-align:center;"></div>
+
+  <!-- Stats -->
+  <div class="stat-grid" id="stats"></div>
+
+  <!-- Parcours par domaine -->
+  <div class="glass-card">
+    <h2 style="font-family:'Manrope',sans-serif;font-weight:800;font-size:17px;margin-bottom:4px;">📈 Parcours de progression</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:18px;">Débutant → Intermédiaire → Expert — chaque niveau certifié sur blockchain Polygon</p>
+    <div id="journeys"></div>
+  </div>
+
+  <!-- Badges -->
+  <div class="glass-card">
+    <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:17px;margin-bottom:16px;">🏅 Mes badges certifiés <span style="font-size:11px;font-family:monospace;color:#94a3b8;">[ERC-5192 Soulbound]</span></h2>
+    <div class="badge-grid" id="badges"></div>
+    <div style="text-align:center;margin-top:20px;">
+      <button onclick="openShare()" style="background:#006B3F;color:#fff;padding:12px 28px;border-radius:999px;font-weight:700;border:none;cursor:pointer;font-size:14px;">📤 Partager mon portfolio</button>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL PARTAGE -->
+<div id="shareModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;">📤 Partager mon portfolio</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px;">Envoyez votre lien + adresse wallet au recruteur pour vérification.</p>
+    <div style="background:#f8fafc;border-radius:12px;padding:11px 14px;margin-bottom:8px;font-size:12px;color:#374151;font-family:monospace;word-break:break-all;border:1px solid #e5e7eb;">🔗 <span id="share-link"></span></div>
+    <div style="background:#f0fdf4;border-radius:12px;padding:10px 14px;margin-bottom:20px;font-size:11px;color:#166534;border:1px solid #86efac;">
+      <div style="font-weight:700;margin-bottom:4px;">🔑 Mon adresse wallet Polygon :</div>
+      <div id="share-wallet" style="font-family:monospace;word-break:break-all;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="share-btn" style="background:linear-gradient(135deg,#006B3F,#00a060);color:#fff;" onclick="doEmail()">
+        <div class="share-icon">✉️</div>
+        <div style="text-align:left;"><div>Envoyer par Mail</div><div style="font-size:11px;font-weight:400;opacity:.8;">Client mail avec lien + wallet</div></div>
+      </button>
+      <button class="share-btn" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;" onclick="doWhatsApp()">
+        <div class="share-icon">💬</div>
+        <div style="text-align:left;"><div>Envoyer par WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:.8;">Message prêt à envoyer</div></div>
+      </button>
+    </div>
+    <button onclick="document.getElementById('shareModal').style.display='none'" style="width:100%;margin-top:14px;padding:10px;color:#94a3b8;background:none;border:none;cursor:pointer;font-size:13px;">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTS ─────────────────────────────────────────────────
+const LEVELS     = ['Débutant','Intermédiaire','Expert'];
+const LEVEL_ICON = { 'Débutant':'🌱','Intermédiaire':'⚡','Expert':'🏆' };
+const LEVEL_CL   = {
+  'Débutant'     : { bg:'#e3f2fd',text:'#1565c0',bar:'#42a5f5',pill:'p-deb'  },
+  'Intermédiaire': { bg:'#fff3e0',text:'#e65100',bar:'#ffa726',pill:'p-inter'},
+  'Expert'       : { bg:'#e8f5e9',text:'#1b5e20',bar:'#66bb6a',pill:'p-exp'  },
+};
+
+// ── LOAD STATE from localStorage (shared with formateur) ───────
+function loadState() {
+  try { const s=localStorage.getItem('sb_state'); if(s) return JSON.parse(s); } catch(e){}
+  return getDefaultState();
+}
+function getDefaultState() {
+  const DW='0x71a3f8e2b9c4d5a7e1f3b8c9d2e4f6a8b1c3d5e7';
+  return {
+    badgeTypes:[
+      {id:'bt_w1',name:'React.js',level:'Débutant',      org:'Bootcamp Ouaga Lab',    domain:'web_dev',emoji:'⚛️'},
+      {id:'bt_w2',name:'React.js',level:'Intermédiaire', org:'Bootcamp Ouaga Lab',    domain:'web_dev',emoji:'⚛️'},
+      {id:'bt_w3',name:'React.js',level:'Expert',        org:'Bootcamp Ouaga Lab',    domain:'web_dev',emoji:'⚛️'},
+      {id:'bt_m1',name:'Flutter', level:'Débutant',      org:'Orange Digital Center', domain:'mobile', emoji:'📱'},
+      {id:'bt_m2',name:'Flutter', level:'Intermédiaire', org:'Orange Digital Center', domain:'mobile', emoji:'📱'},
+      {id:'bt_m3',name:'Flutter', level:'Expert',        org:'Orange Digital Center', domain:'mobile', emoji:'📱'},
+      {id:'bt_d1',name:'UI/UX',   level:'Débutant',      org:'African Design School', domain:'design', emoji:'🎨'},
+      {id:'bt_d2',name:'UI/UX',   level:'Intermédiaire', org:'African Design School', domain:'design', emoji:'🎨'},
+      {id:'bt_d3',name:'UI/UX',   level:'Expert',        org:'African Design School', domain:'design', emoji:'🎨'},
+    ],
+    attributions:[
+      {id:'t01',badgeTypeId:'bt_w1',student:'Moussa Traoré',   wallet:DW,          date:'2026-01-10',block:14800000,tx:'0x7a3f...c2e9',ipfs:'QmWn...a1B2',revoked:false},
+      {id:'t02',badgeTypeId:'bt_w2',student:'Moussa Traoré',   wallet:DW,          date:'2026-02-15',block:14830000,tx:'0x8b4e...d3f0',ipfs:'QmZp...c3D4',revoked:false},
+      {id:'t03',badgeTypeId:'bt_m1',student:'Moussa Traoré',   wallet:DW,          date:'2026-03-01',block:14850000,tx:'0x9c5f...e4g1',ipfs:'QmRq...e5F6',revoked:false},
+      {id:'t04',badgeTypeId:'bt_d1',student:'Moussa Traoré',   wallet:DW,          date:'2026-03-20',block:14860000,tx:'0xa1b2...f3e4',ipfs:'QmAb...g7H8',revoked:false},
+      {id:'t05',badgeTypeId:'bt_d2',student:'Moussa Traoré',   wallet:DW,          date:'2026-04-10',block:14872000,tx:'0xb2c3...g4f5',ipfs:'QmEf...i9J0',revoked:false},
+      {id:'t06',badgeTypeId:'bt_d3',student:'Moussa Traoré',   wallet:DW,          date:'2026-04-15',block:14875000,tx:'0xc3d4...h5g6',ipfs:'QmHi...k1L2',revoked:false},
+      {id:'t07',badgeTypeId:'bt_m1',student:'Aminata Sawadogo',wallet:'0xabc1...001',date:'2026-03-05',block:14855000,tx:'0xd4e5...i6h7',ipfs:'QmLm...m3N4',revoked:false},
+      {id:'t08',badgeTypeId:'bt_m2',student:'Aminata Sawadogo',wallet:'0xabc1...001',date:'2026-04-08',block:14868000,tx:'0xe5f6...j7i8',ipfs:'QmOp...o5P6',revoked:false},
+      {id:'t09',badgeTypeId:'bt_m1',student:'Ibrahim Diallo',  wallet:'0xdef2...002',date:'2026-02-01',block:14820000,tx:'0xf6g7...k8j9',ipfs:'QmSt...q7R8',revoked:false},
+      {id:'t10',badgeTypeId:'bt_m2',student:'Ibrahim Diallo',  wallet:'0xdef2...002',date:'2026-03-10',block:14858000,tx:'0xg7h8...l9k0',ipfs:'QmWx...s9T0',revoked:false},
+      {id:'t11',badgeTypeId:'bt_m3',student:'Ibrahim Diallo',  wallet:'0xdef2...002',date:'2026-04-12',block:14873000,tx:'0xh8i9...m0l1',ipfs:'QmAb...u1V2',revoked:false},
+    ],
+    learners:{
+      [DW]:          {name:'Moussa Traoré',   title:'Développeur Full-Stack | Web3'},
+      '0xabc1...001':{name:'Aminata Sawadogo',title:'Développeuse Mobile'},
+      '0xdef2...002':{name:'Ibrahim Diallo',  title:'Expert Flutter'},
+    }
+  };
+}
+
+const state = loadState();
+const DW = '0x71a3f8e2b9c4d5a7e1f3b8c9d2e4f6a8b1c3d5e7';
+let currentWallet = DW;
+
+function getBT(id) { return state.badgeTypes.find(b=>b.id===id)||{}; }
+
+// ── DOMAIN MAP ────────────────────────────────────────────────
+function getWalletDomains(wallet) {
+  const map={};
+  state.attributions.filter(a=>a.wallet===wallet&&!a.revoked).forEach(a=>{
+    const bt=getBT(a.badgeTypeId);
+    if(!bt.domain) return;
+    if(!map[bt.domain]) map[bt.domain]={domain:bt.domain,name:bt.name,emoji:bt.emoji,org:bt.org,levels:{}};
+    map[bt.domain].levels[bt.level]={...a,bt};
+  });
+  return map;
+}
+function topLevel(d) { for(let i=LEVELS.length-1;i>=0;i--) if(d.levels[LEVELS[i]]) return LEVELS[i]; return null; }
+function nextLvl(d)  { const t=topLevel(d); if(!t) return LEVELS[0]; const i=LEVELS.indexOf(t); return i<LEVELS.length-1?LEVELS[i+1]:null; }
+function domPct(d)   { return Math.round(LEVELS.filter(l=>d.levels[l]).length/LEVELS.length*100); }
+
+// ── SEARCH ────────────────────────────────────────────────────
+function onSearch() {
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  const div=document.getElementById('search-results');
+  if(!q){div.innerHTML='';return;}
+  const found=new Map();
+  state.attributions.forEach(a=>{if(a.student.toLowerCase().includes(q))found.set(a.wallet,a.student);});
+  Object.entries(state.learners).forEach(([w,l])=>{if(l.name.toLowerCase().includes(q))found.set(w,l.name);});
+  if(!found.size){div.innerHTML='<p style="color:rgba(255,255,255,.7);font-size:13px;margin-top:4px;">Aucun apprenant trouvé.</p>';return;}
+  div.innerHTML=[...found.entries()].map(([w,n])=>`
+    <button onclick="loadLearner('${w}')" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);color:#1a1a2e;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;margin:4px 4px 0 0;">
+      👤 ${n}
+    </button>`).join('');
+}
+function loadLearner(wallet) {
+  currentWallet=wallet;
+  document.getElementById('search').value='';
+  document.getElementById('search-results').innerHTML='';
+  render();
+  notify('✅ Profil : '+(state.learners[wallet]?.name||''));
+}
+function clearSearch() {
+  document.getElementById('search').value='';
+  document.getElementById('search-results').innerHTML='';
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const wallet  = currentWallet;
+  const learner = state.learners[wallet]||{name:wallet.substring(0,18)+'…',title:'Apprenant SkillBadge'};
+  const badges  = state.attributions.filter(a=>a.wallet===wallet&&!a.revoked).map(a=>({...a,bt:getBT(a.badgeTypeId)}));
+  const domains = getWalletDomains(wallet);
+  const domList = Object.values(domains);
+
+  // PROFILE
+  document.getElementById('profile').innerHTML=`
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,#006B3F,#FFB300);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;box-shadow:0 8px 24px rgba(0,107,63,.3);">👤</div>
+    <h1 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;color:#1a1a2e;">${learner.name}</h1>
+    <p style="color:#64748b;margin-top:4px;font-size:13px;">${learner.title}</p>
+    <div style="margin-top:14px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:12px 16px;max-width:500px;margin-left:auto;margin-right:auto;">
+      <div style="font-size:10px;font-weight:700;color:#065f46;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">🔑 Mon adresse wallet Polygon</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-family:monospace;font-size:12px;color:#166534;word-break:break-all;flex:1;">${wallet}</span>
+        <button onclick="copyW('${wallet}')" style="background:#006B3F;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;">📋 Copier</button>
+      </div>
+      <div style="font-size:10px;color:#166534;margin-top:5px;opacity:.7;">Transmettez cette adresse complète au recruteur pour vérification.</div>
+    </div>`;
+
+  // STATS
+  const expertCount=domList.filter(d=>topLevel(d)==='Expert').length;
+  document.getElementById('stats').innerHTML=[
+    [badges.length,'Badges obtenus'],
+    [domList.length,'Domaines certifiés'],
+    [expertCount,'Niveaux Expert 🏆'],
+  ].map(([v,l])=>`<div class="stat-card"><div class="stat-val">${v}</div><div class="stat-label">${l}</div></div>`).join('');
+
+  // JOURNEYS
+  document.getElementById('journeys').innerHTML = domList.length
+    ? domList.map(d=>buildJourney(d)).join('')
+    : '<p style="color:#94a3b8;font-size:13px;">Aucune compétence enregistrée.</p>';
+
+  // BADGES GRID
+  const grid=document.getElementById('badges');
+  if(!badges.length){grid.innerHTML='<p style="color:#94a3b8;grid-column:1/-1;text-align:center;padding:20px;">Aucun badge reçu.</p>';return;}
+  const sorted=[...badges].sort((a,b)=>{
+    if(a.bt.domain!==b.bt.domain) return a.bt.domain.localeCompare(b.bt.domain);
+    return LEVELS.indexOf(a.bt.level)-LEVELS.indexOf(b.bt.level);
+  });
+  grid.innerHTML=sorted.map((b,i)=>{
+    const lc=LEVEL_CL[b.bt.level]||{bg:'#f1f5f9',text:'#374151',bar:'#94a3b8',pill:''};
+    return `<div class="badge-card pop-in fade-in" style="border-top:3px solid ${lc.bar};animation-delay:${i*.06}s;">
+      <div style="font-size:28px;margin-bottom:6px;">${b.bt.emoji||'🏅'}</div>
+      <div style="font-weight:700;font-size:13px;">${b.bt.name}</div>
+      <div style="font-size:10px;color:#64748b;margin-top:2px;">${b.bt.org}</div>
+      <span class="pill ${lc.pill}" style="margin-top:8px;display:inline-flex;">${LEVEL_ICON[b.bt.level]} ${b.bt.level}</span>
+      <div style="margin-top:5px;font-size:9px;font-family:monospace;color:#94a3b8;">📅 ${b.date}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildJourney(d) {
+  const pct=domPct(d); const top=topLevel(d); const nxt=nextLvl(d);
+  const lc=top?LEVEL_CL[top]:{bar:'#94a3b8',text:'#374151'};
+
+  const levelsHtml=LEVELS.map((lvl,i)=>{
+    const token=d.levels[lvl]; const isTop=lvl===top;
+    const dotCls=token?(isTop?'active':'done'):'locked';
+    const lci=LEVEL_CL[lvl];
+    let tag='';
+    if(token) tag=`<span style="background:${lci.bg};color:${lci.text};font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;">✓ ${token.date}</span>`;
+    else if(nxt===lvl||(!top&&i===0)) tag=`<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid #fcd34d;">🎯 Prochain</span>`;
+    else tag=`<span style="font-size:10px;color:#cbd5e1;">Verrouillé</span>`;
+    const connector=i<LEVELS.length-1?`<div style="width:2px;height:14px;margin-left:17px;background:${token?lci.bar:'#e5e7eb'};border-radius:2px;"></div>`:'';
+    return `<div class="level-row">
+      <div class="lvl-dot ${dotCls}">${token?LEVEL_ICON[lvl]:'○'}</div>
+      <div style="flex:1;padding-top:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:${token?700:400};color:${token?'#1a1a2e':'#94a3b8'};">${lvl}</span>
+          ${tag}
+        </div>
+        ${token?`<div style="font-size:11px;color:#64748b;margin-top:2px;">Bloc ${token.block} · ${d.org}</div>`:''}
+      </div>
+    </div>${connector}`;
+  }).join('');
+
+  return `<div class="domain-card fade-in">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:26px;">${d.emoji||'🏅'}</span>
+      <div style="flex:1;">
+        <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:15px;">${d.name}</div>
+        <div style="font-size:11px;color:#64748b;">${d.org||''}</div>
+      </div>
+      ${nxt
+        ?`<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid #fcd34d;white-space:nowrap;">Prochain : ${nxt}</span>`
+        :`<span style="background:#e8f5e9;color:#1b5e20;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid #a7f3d0;white-space:nowrap;">🏆 Maîtrisé</span>`
+      }
+    </div>
+    <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;">${levelsHtml}</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="prog-bar" style="flex:1;"><div class="prog-fill" style="width:${pct}%;background:linear-gradient(90deg,${lc.bar||'#42a5f5'},#FFB300);"></div></div>
+      <span style="font-size:12px;font-weight:800;color:${lc.text||'#006B3F'};min-width:36px;">${pct}%</span>
+    </div>
+  </div>`;
+}
+
+// ── PARTAGE ───────────────────────────────────────────────────
+function openShare() {
+  const w=currentWallet;
+  document.getElementById('share-link').textContent='https://skillbadge.bf/verify/'+w;
+  document.getElementById('share-wallet').textContent=w;
+  document.getElementById('shareModal').style.display='flex';
+}
+function doEmail() {
+  const w=currentWallet; const l=state.learners[w]||{name:'Apprenant'};
+  const link='https://skillbadge.bf/verify/'+w;
+  const sub=encodeURIComponent('Portfolio certifié SkillBadge — '+l.name);
+  const body=encodeURIComponent('Bonjour,\n\nVoici mon portfolio SkillBadge :\n'+link+'\n\nMon wallet Polygon (à coller dans le portail Recruteur) :\n'+w+'\n\nCordialement,\n'+l.name);
+  window.open('mailto:?subject='+sub+'&body='+body,'_blank');
+  document.getElementById('shareModal').style.display='none'; notify('✉️ Client mail ouvert !');
+}
+function doWhatsApp() {
+  const w=currentWallet;
+  const link='https://skillbadge.bf/verify/'+w;
+  const text=encodeURIComponent('👋 Mon portfolio SkillBadge !\n🏅 Badges ERC-5192 certifiés sur Polygon.\n🔗 '+link+'\n🔑 Wallet Polygon :\n'+w);
+  window.open('https://wa.me/?text='+text,'_blank');
+  document.getElementById('shareModal').style.display='none'; notify('💬 WhatsApp ouvert !');
+}
+function copyW(w) {
+  navigator.clipboard?.writeText(w).catch(()=>{
+    const el=document.createElement('textarea'); el.value=w;
+    document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+  });
+  notify('📋 Adresse wallet copiée !');
+}
+
+let _nt;
+function notify(msg,color='#006B3F'){
+  const el=document.getElementById('notif');
+  el.innerHTML=`<div class="notif-box" style="background:${color};">${msg}</div>`;
+  el.style.display='block'; clearTimeout(_nt);
+  _nt=setTimeout(()=>el.style.display='none',4000);
+}
+
+render();
+</script>
+</body>
+</html>

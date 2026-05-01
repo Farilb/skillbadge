@@ -70,7 +70,7 @@ Le projet simule une blockchain Polygon avec des identifiants réalistes :
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/votre-compte/skillbadge.git
+git clone https://github.com/Farilb/skillbadge.git
 
 # 2. Accéder au dossier
 cd skillbadge

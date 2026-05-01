@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #1a1a2e; min-height: 100vh; }
+
+.nav-tab {
+  cursor: pointer; padding: 9px 20px; border-radius: 999px;
+  font-weight: 700; font-size: 13px; transition: all .2s;
+  border: 2px solid rgba(0,107,63,0.3); outline: none;
+  background: rgba(0,107,63,0.15); color: #00c060;
+}
+.nav-tab:hover { background: rgba(0,107,63,0.25); }
+.nav-tab.active-formateur,
+.nav-tab.active-apprenant,
+.nav-tab.active-recruteur { background: #006B3F; color: #fff; border-color: #006B3F; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+#panel-formateur { background-color: #f5f2ff; min-height: calc(100vh - 64px); }
+#panel-apprenant { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: calc(100vh - 64px); }
+#panel-recruteur  { background: #1a1a2e; min-height: calc(100vh - 64px); }
+
+.badge-scroll-container { max-height: 340px; overflow-y: auto; padding-right: 4px; }
+.badge-scroll-container::-webkit-scrollbar { width: 6px; }
+.badge-scroll-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+.badge-scroll-container::-webkit-scrollbar-thumb { background: #006B3F; border-radius: 99px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal-box { background: #fff; border-radius: 20px; padding: 28px; width: min(500px, 95vw); max-height: 92vh; overflow-y: auto; }
+
+.share-btn { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.share-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.share-btn-mail { background: linear-gradient(135deg, #006B3F, #00a060); color: #fff; }
+.share-btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
+.share-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+
+.progress-bar { height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-top: 6px; }
+.progress-fill { height: 100%; border-radius: 999px; transition: width .8s ease; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: #006B3F; border-radius: 50%; animation: spin .8s linear infinite; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.fade-in { animation: fadeIn .35s ease both; }
+
+@keyframes pop { 0%{transform:scale(0.7);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+.pop-in { animation: pop .45s cubic-bezier(.4,0,.2,1) both; }
+
+#notif { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: none; }
+.notif-box { padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 24px rgba(0,0,0,.3); color: #fff; }
+
+.bc-tag { display: inline-flex; align-items: center; font-size: 10px; font-family: monospace; background: #f0fdf4; color: #166534; padding: 2px 7px; border-radius: 6px; border: 1px solid #bbf7d0; }
+.bc-tag-revoked { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+.field-label { font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 5px; }
+.field-input { width: 100%; padding: 11px 14px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; outline: none; transition: border-color .2s; font-family: 'Inter', sans-serif; }
+.field-input:focus { border-color: #006B3F; }
+.field-input:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
+
+.wallet-generated { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 10px 14px; font-family: monospace; font-size: 12px; color: #166534; display: flex; align-items: center; justify-content: space-between; gap: 8px; word-break: break-all; }
+.wallet-regen { background: none; border: none; cursor: pointer; color: #006B3F; font-size: 18px; flex-shrink: 0; }
+
+/* PROGRESSION TIMELINE */
+.domain-track { background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 14px; }
+.level-steps { display: flex; align-items: center; gap: 0; margin-top: 14px; }
+.level-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+.level-step:not(:last-child)::after {
+  content: ''; position: absolute; top: 18px; left: 50%; width: 100%; height: 3px;
+  background: #e5e7eb; z-index: 0;
+}
+.level-step.done:not(:last-child)::after { background: linear-gradient(90deg, #006B3F, #FFB300); }
+.step-circle {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; border: 3px solid #e5e7eb; background: #fff;
+  position: relative; z-index: 1; transition: all .3s;
+}
+.step-circle.done   { background: #006B3F; border-color: #006B3F; color: #fff; box-shadow: 0 0 0 4px rgba(0,107,63,.15); }
+.step-circle.active { background: #FFB300; border-color: #FFB300; color: #fff; box-shadow: 0 0 0 4px rgba(255,179,0,.2); }
+.step-circle.locked { background: #f1f5f9; border-color: #e5e7eb; color: #94a3b8; }
+.step-label { font-size: 11px; font-weight: 600; margin-top: 6px; color: #64748b; text-align: center; }
+.step-label.done   { color: #006B3F; }
+.step-label.active { color: #f59e0b; }
+
+/* BADGE CARD avec niveau */
+.badge-card-prog {
+  background: #f9f9f9; border-radius: 14px; padding: 16px; text-align: center;
+  border-left: 4px solid #FFB300; position: relative; overflow: hidden;
+}
+.level-ribbon {
+  position: absolute; top: 0; right: 0; padding: 4px 10px; border-radius: 0 14px 0 10px;
+  font-size: 10px; font-weight: 700;
+}
+
+/* UPGRADE BANNER */
+.upgrade-banner {
+  background: linear-gradient(135deg, #FFB300, #ff8c00);
+  border-radius: 12px; padding: 10px 14px; margin-top: 8px;
+  font-size: 12px; color: #1a1a2e; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav style="background:rgba(26,26,46,0.97);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.07);">
+  <div style="max-width:960px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;flex-wrap:wrap;gap:10px;">
+    <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px;color:#fff;">
+      Skill<span style="color:#FFB300;">Badge</span>
+      <span style="font-size:10px;font-weight:500;color:rgba(255,255,255,.4);margin-left:8px;font-family:monospace;background:rgba(255,255,255,.07);padding:2px 7px;border-radius:4px;">Polygon ERC-5192</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="nav-tab active-formateur" id="tab-formateur" onclick="switchTab('formateur')">🎓 Formateur</button>
+      <button class="nav-tab" id="tab-apprenant" onclick="switchTab('apprenant')">👤 Apprenant</button>
+      <button class="nav-tab" id="tab-recruteur"  onclick="switchTab('recruteur')">🔍 Recruteur</button>
+    </div>
+  </div>
+</nav>
+
+<div id="notif"></div>
+
+<!-- ======== FORMATEUR ======== -->
+<div id="panel-formateur" class="panel active">
+  <div style="max-width:960px;margin:auto;padding:28px 20px;">
+    <h1 style="font-family:'Manrope',sans-serif;font-size:24px;font-weight:800;margin-bottom:20px;">Tableau de bord formateur</h1>
+    <div id="formateur-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+      <button onclick="openCreateModal()" style="background:#006B3F;color:#fff;padding:11px 22px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;">＋ Créer un badge</button>
+      <button onclick="openAttributeModal()" style="background:#FFB300;color:#1a1a2e;padding:11px 22px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;">🏅 Attribuer / Promouvoir</button>
+    </div>
+    <div style="background:#fff;border-radius:22px;padding:24px;box-shadow:0 2px 16px rgba(0,0,0,.06);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:17px;">📜 Badges émis — <span id="badge-count" style="color:#006B3F;"></span></h2>
+        <input type="text" id="filter-formateur" class="field-input" style="width:200px;" placeholder="🔍 Filtrer..." oninput="renderBadgesList()">
+      </div>
+      <div class="badge-scroll-container">
+        <div id="badges-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:14px 18px;background:rgba(0,107,63,.08);border-radius:14px;font-size:12px;color:#166534;border:1px solid rgba(0,107,63,.2);">
+      ⛓️ <strong>Smart contract Polygon :</strong> <span style="font-family:monospace;">0xSB...3F42</span> · <strong>ERC-5192 Soulbound</strong> · Polygon Amoy Testnet · Gas &lt;$0.01
+    </div>
+  </div>
+</div>
+
+<!-- ======== APPRENANT ======== -->
+<div id="panel-apprenant" class="panel">
+  <div style="max-width:960px;margin:auto;padding:28px 20px;">
+    <div style="background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:20px;padding:20px;margin-bottom:20px;border:1px solid rgba(255,255,255,.2);">
+      <p style="color:#fff;font-weight:600;margin-bottom:10px;font-size:14px;">👤 Rechercher un apprenant par nom</p>
+      <div style="display:flex;gap:10px;">
+        <input type="text" id="apprenant-search" class="field-input" placeholder="Ex: Sana Fanta, Moussa Traoré..." oninput="onApprenantSearch()" style="background:rgba(255,255,255,.92);">
+        <button onclick="clearSearch()" style="background:rgba(255,255,255,.2);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;border:1px solid rgba(255,255,255,.3);cursor:pointer;">✕</button>
+      </div>
+      <div id="apprenant-search-results" style="margin-top:10px;"></div>
+    </div>
+    <div id="apprenant-profile" style="background:#fff;border-radius:24px;padding:28px;text-align:center;margin-bottom:20px;box-shadow:0 8px 40px rgba(0,0,0,.15);"></div>
+    <div id="apprenant-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;"></div>
+
+    <!-- PARCOURS PAR DOMAINE -->
+    <div style="background:#fff;border-radius:22px;padding:24px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);">
+      <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:17px;margin-bottom:4px;">🚀 Parcours de progression par domaine</h2>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:18px;">Débutant → Intermédiaire → Expert — chaque niveau certifié sur blockchain</p>
+      <div id="domain-tracks"></div>
+    </div>
+
+    <!-- BADGES -->
+    <div style="background:#fff;border-radius:22px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.1);">
+      <h2 style="font-family:'Manrope',sans-serif;font-weight:700;font-size:17px;margin-bottom:16px;">🏅 Badges certifiés <span style="font-size:11px;font-family:monospace;color:#64748b;">[ERC-5192 Soulbound]</span></h2>
+      <div id="apprenant-badges" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;"></div>
+      <div style="text-align:center;margin-top:20px;">
+        <button onclick="openShareModal()" style="background:#006B3F;color:#fff;padding:12px 28px;border-radius:999px;font-weight:700;border:none;cursor:pointer;font-size:14px;">📤 Partager mon portfolio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== RECRUTEUR ======== -->
+<div id="panel-recruteur" class="panel">
+  <div style="max-width:680px;margin:auto;padding:28px 20px;">
+    <div style="text-align:center;color:#fff;margin-bottom:28px;">
+      <h1 style="font-family:'Manrope',sans-serif;font-size:28px;font-weight:800;">🔍 Vérifier un candidat</h1>
+      <p style="color:rgba(255,255,255,.55);margin-top:6px;font-size:14px;">Entrez son adresse wallet Polygon</p>
+    </div>
+    <div style="background:#fff;border-radius:22px;padding:24px;margin-bottom:20px;">
+      <label class="field-label">Adresse wallet Polygon</label>
+      <div style="display:flex;gap:10px;margin-top:2px;">
+        <input type="text" id="walletInput" class="field-input" style="flex:1;" placeholder="0x...">
+        <button onclick="verify()" style="background:#006B3F;color:#fff;padding:11px 18px;border-radius:12px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;">Vérifier</button>
+      </div>
+      <p style="font-size:11px;color:#94a3b8;margin-top:6px;">Ex: 0x71a3f8e2b9c4d5a7e1f3b8c9d2e4f6a8b1c3d5e7</p>
+    </div>
+    <div id="results"></div>
+  </div>
+</div>
+
+<!-- ======== MODAL CRÉER ======== -->
+<div id="createModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin-bottom:18px;">Créer un type de badge</h2>
+    <label class="field-label">Nom du badge</label>
+    <input type="text" id="badgeName" placeholder="Ex: Python Data Science" class="field-input" style="margin-bottom:12px;">
+    <label class="field-label">Niveau</label>
+    <select id="badgeLevel" class="field-input" style="margin-bottom:12px;">
+      <option>Débutant</option><option>Intermédiaire</option><option>Expert</option>
+    </select>
+    <label class="field-label">Organisation émettrice</label>
+    <input type="text" id="badgeOrg" placeholder="Ex: Bootcamp Ouaga Lab" class="field-input" style="margin-bottom:12px;">
+    <label class="field-label">Domaine (clé unique ex: web_dev, mobile, design…)</label>
+    <input type="text" id="badgeDomain" placeholder="Ex: web_development" class="field-input" style="margin-bottom:12px;">
+    <label class="field-label">Emoji</label>
+    <input type="text" id="badgeEmoji" placeholder="🐍" class="field-input" style="margin-bottom:18px;">
+    <button onclick="createBadgeType()" style="background:#006B3F;color:#fff;width:100%;padding:13px;border-radius:12px;font-weight:700;border:none;cursor:pointer;">⛓️ Minter sur Polygon</button>
+    <button onclick="closeCreateModal()" style="width:100%;margin-top:8px;padding:10px;color:#94a3b8;background:none;border:none;cursor:pointer;font-size:13px;">Annuler</button>
+  </div>
+</div>
+
+<!-- ======== MODAL ATTRIBUER ======== -->
+<div id="attributeModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;">Attribuer / Promouvoir un badge</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:16px;">Si l'apprenant a déjà un badge dans ce domaine, le niveau suivant lui sera proposé automatiquement.</p>
+
+    <label class="field-label">Nom complet de l'apprenant</label>
+    <input type="text" id="studentName" placeholder="Ex: Sana Fanta" class="field-input" style="margin-bottom:12px;" oninput="onStudentNameInput()">
+
+    <!-- Sélecteur de domaine d'abord -->
+    <label class="field-label">Domaine</label>
+    <select id="selectDomain" class="field-input" style="margin-bottom:12px;" onchange="onDomainChange()"></select>
+
+    <!-- Niveau suggéré automatiquement -->
+    <div id="level-suggestion-box" style="margin-bottom:12px;"></div>
+
+    <!-- Badge résultant -->
+    <label class="field-label">Badge à émettre</label>
+    <select id="selectBadgeType" class="field-input" style="margin-bottom:12px;"></select>
+
+    <label class="field-label" style="display:flex;align-items:center;gap:6px;">
+      Adresse wallet Polygon
+      <span style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;">Auto-générée</span>
+    </label>
+    <div class="wallet-generated" style="margin-bottom:6px;">
+      <span id="generatedWallet" style="flex:1;font-size:11px;"></span>
+      <button class="wallet-regen" onclick="regenWallet()" title="Régénérer">🔄</button>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin-bottom:16px;">Générée automatiquement · ERC-5192 Soulbound · Métadonnées IPFS</p>
+
+    <button onclick="attributeBadge()" style="background:#FFB300;color:#1a1a2e;width:100%;padding:13px;border-radius:12px;font-weight:800;border:none;cursor:pointer;">🏅 Émettre le Soulbound Token</button>
+    <button onclick="closeAttributeModal()" style="width:100%;margin-top:8px;padding:10px;color:#94a3b8;background:none;border:none;cursor:pointer;font-size:13px;">Annuler</button>
+  </div>
+</div>
+
+<!-- ======== MODAL PARTAGER ======== -->
+<div id="shareModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box" style="max-width:400px;">
+    <h2 style="font-family:'Manrope',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;">📤 Partager mon portfolio</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px;">Choisissez comment envoyer votre lien de vérification certifié.</p>
+    <div style="background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:12px;color:#374151;font-family:monospace;word-break:break-all;border:1px solid #e5e7eb;">
+      🔗 <span id="share-link-preview"></span>
+    </div>
+    <div style="background:#f0fdf4;border-radius:12px;padding:10px 14px;margin-bottom:20px;font-size:11px;color:#166534;border:1px solid #86efac;">
+      <div style="font-weight:700;margin-bottom:4px;">🔑 Adresse wallet à transmettre au recruteur :</div>
+      <div id="share-wallet-display" style="font-family:monospace;word-break:break-all;font-size:11px;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="share-btn share-btn-mail" onclick="shareByEmail()">
+        <div class="share-icon">✉️</div>
+        <div style="text-align:left;"><div>Envoyer par Mail</div><div style="font-size:11px;font-weight:400;opacity:.8;">Ouvre votre client mail</div></div>
+      </button>
+      <button class="share-btn share-btn-whatsapp" onclick="shareByWhatsApp()">
+        <div class="share-icon">💬</div>
+        <div style="text-align:left;"><div>Envoyer par WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:.8;">Partage direct via WhatsApp</div></div>
+      </button>
+    </div>
+    <button onclick="closeShareModal()" style="width:100%;margin-top:16px;padding:10px;color:#94a3b8;background:none;border:none;cursor:pointer;font-size:13px;">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const DEMO_WALLET = '0x71a3f8e2b9c4d5a7e1f3b8c9d2e4f6a8b1c3d5e7';
+const LEVELS      = ['Débutant','Intermédiaire','Expert'];
+const LEVEL_PCT   = { Débutant:33, Intermédiaire:66, Expert:100 };
+const LEVEL_COLOR = {
+  Débutant:     { bg:'#e3f2fd', text:'#1976d2', fill:'#2196f3', ribbon:'#dbeafe' },
+  Intermédiaire:{ bg:'#fff3e0', text:'#f57c00', fill:'#FFB300', ribbon:'#fef9c3' },
+  Expert:       { bg:'#e8f5e9', text:'#2e7d32', fill:'#006B3F', ribbon:'#dcfce7' },
+};
+
+const state = {
+  badgeTypes: [
+    { id:'bt1', name:'React.js',   level:'Débutant',      org:'Bootcamp Ouaga Lab',    domain:'web_dev',  emoji:'⚛️' },
+    { id:'bt2', name:'React.js',   level:'Intermédiaire', org:'Bootcamp Ouaga Lab',    domain:'web_dev',  emoji:'⚛️' },
+    { id:'bt3', name:'React.js',   level:'Expert',        org:'Bootcamp Ouaga Lab',    domain:'web_dev',  emoji:'⚛️' },
+    { id:'bt4', name:'Flutter',    level:'Débutant',      org:'Orange Digital Center', domain:'mobile',   emoji:'📱' },
+    { id:'bt5', name:'Flutter',    level:'Intermédiaire', org:'Orange Digital Center', domain:'mobile',   emoji:'📱' },
+    { id:'bt6', name:'Flutter',    level:'Expert',        org:'Orange Digital Center', domain:'mobile',   emoji:'📱' },
+    { id:'bt7', name:'UI/UX',      level:'Débutant',      org:'African Design School', domain:'design',   emoji:'🎨' },
+    { id:'bt8', name:'UI/UX',      level:'Intermédiaire', org:'African Design School', domain:'design',   emoji:'🎨' },
+    { id:'bt9', name:'UI/UX',      level:'Expert',        org:'African Design School', domain:'design',   emoji:'🎨' },
+  ],
+  attributions: [
+    { id:'tok001', badgeTypeId:'bt1', student:'Moussa Traoré', wallet:DEMO_WALLET, date:'2026-01-10', block:14800000, tx:'0x7a3f...c2e9', ipfsHash:'QmWn...a1B2', revoked:false },
+    { id:'tok002', badgeTypeId:'bt2', student:'Moussa Traoré', wallet:DEMO_WALLET, date:'2026-02-15', block:14830000, tx:'0x8b4e...d3f0', ipfsHash:'QmZp...c3D4', revoked:false },
+    { id:'tok003', badgeTypeId:'bt4', student:'Moussa Traoré', wallet:DEMO_WALLET, date:'2026-03-01', block:14850000, tx:'0x9c5f...e4g1', ipfsHash:'QmRq...e5F6', revoked:false },
+    { id:'tok004', badgeTypeId:'bt7', student:'Moussa Traoré', wallet:DEMO_WALLET, date:'2026-03-20', block:14860000, tx:'0xa1b2...f3e4', ipfsHash:'QmAb...g7H8', revoked:false },
+    { id:'tok005', badgeTypeId:'bt8', student:'Moussa Traoré', wallet:DEMO_WALLET, date:'2026-04-10', block:14872310, tx:'0xb2c3...g4f5', ipfsHash:'QmEf...i9J0', revoked:false },
+    { id:'tok006', badgeTypeId:'bt4', student:'Aminata Sawadogo', wallet:'0xabc1...001', date:'2026-03-05', block:14855000, tx:'0xc3d4...h5i6', ipfsHash:'QmKl...k1L2', revoked:false },
+  ],
+  learners: {
+    [DEMO_WALLET]:  { name:'Moussa Traoré',    title:'Développeur Full-Stack | Passionné Web3' },
+    '0xabc1...001': { name:'Aminata Sawadogo', title:'Développeuse Web & Mobile' },
+  },
+  currentLearnerWallet: DEMO_WALLET,
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getBT(id)  { return state.badgeTypes.find(b=>b.id===id)||{}; }
+function lc(level) { return LEVEL_COLOR[level]||LEVEL_COLOR['Débutant']; }
+
+function getLearnerBadges(wallet) {
+  return state.attributions.filter(a=>a.wallet===wallet&&!a.revoked).map(a=>({...a,badgeType:getBT(a.badgeTypeId)}));
+}
+
+// Retourne pour un wallet+domain, le niveau actuel (ou null) et le niveau suivant possible
+function getDomainProgress(wallet, domain) {
+  const earned = getLearnerBadges(wallet)
+    .filter(b=>b.badgeType.domain===domain)
+    .map(b=>b.badgeType.level);
+  const maxIdx = Math.max(-1,...earned.map(l=>LEVELS.indexOf(l)));
+  return {
+    earnedLevels: earned,
+    currentLevel: maxIdx>=0 ? LEVELS[maxIdx] : null,
+    nextLevel:    maxIdx<LEVELS.length-1 ? LEVELS[maxIdx+1] : null,
+    isComplete:   maxIdx===LEVELS.length-1,
+  };
+}
+
+// Retourne tous les domaines distincts (des badgeTypes existants)
+function getAllDomains() {
+  const map = new Map();
+  state.badgeTypes.forEach(b=>{
+    if(!map.has(b.domain)) map.set(b.domain,{domain:b.domain,name:b.name,emoji:b.emoji});
+  });
+  return [...map.values()];
+}
+
+function generateWallet() {
+  const chars='0123456789abcdef'; let w='0x';
+  for(let i=0;i<40;i++) w+=chars[Math.floor(Math.random()*16)];
+  return w;
+}
+let currentGeneratedWallet = generateWallet();
+function regenWallet() { currentGeneratedWallet=generateWallet(); document.getElementById('generatedWallet').textContent=currentGeneratedWallet; }
+function randomTx()    { return '0x'+Math.random().toString(16).substr(2,4)+'...'+Math.random().toString(16).substr(2,4); }
+function randomIpfs()  { return 'Qm'+Math.random().toString(36).substr(2,6).toUpperCase()+'...'+Math.random().toString(36).substr(2,4); }
+function randomBlock() { return 14900000+Math.floor(Math.random()*50000); }
+
+// ============================================================
+// NAV
+// ============================================================
+function switchTab(tab) {
+  ['formateur','apprenant','recruteur'].forEach(t=>{
+    document.getElementById('panel-'+t).classList.remove('active');
+    document.getElementById('tab-'+t).className='nav-tab';
+  });
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).className='nav-tab active-'+tab;
+  renderAll();
+}
+
+function renderAll() {
+  renderFormateurStats();
+  renderBadgesList();
+  renderApprenantView();
+}
+
+// ============================================================
+// FORMATEUR STATS + LIST
+// ============================================================
+function renderFormateurStats() {
+  const total   = state.attributions.length;
+  const students= new Set(state.attributions.map(a=>a.wallet)).size;
+  const types   = new Set(state.badgeTypes.map(b=>b.domain)).size;
+  document.getElementById('formateur-stats').innerHTML=[
+    [total,'Badges émis'],[students,'Apprenants certifiés'],[types,'Domaines couverts'],['98%','Vérifiabilité']
+  ].map(([v,l])=>`<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+    <div style="font-size:26px;font-weight:900;color:#FFB300;">${v}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px;">${l}</div>
+  </div>`).join('');
+}
+
+function renderBadgesList() {
+  const filter=(document.getElementById('filter-formateur')?.value||'').toLowerCase();
+  let list=[...state.attributions].reverse();
+  if(filter) list=list.filter(a=>{const bt=getBT(a.badgeTypeId);return a.student.toLowerCase().includes(filter)||(bt.name||'').toLowerCase().includes(filter);});
+  document.getElementById('badge-count').textContent=list.length+' token'+(list.length!==1?'s':'')+' ERC-5192';
+  if(!list.length){document.getElementById('badges-list').innerHTML='<p style="color:#94a3b8;text-align:center;padding:20px;">Aucun résultat.</p>';return;}
+  document.getElementById('badges-list').innerHTML=list.map(a=>{
+    const bt=getBT(a.badgeTypeId);const c=lc(bt.level||'Débutant');
+    return `<div class="fade-in" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fafc;border-radius:12px;gap:10px;flex-wrap:wrap;">
+      <div>
+        <span style="font-weight:700;font-size:14px;">${bt.emoji||'🏅'} ${bt.name||'Badge'} <span style="font-size:11px;font-weight:400;color:#94a3b8;">· ${bt.domain||''}</span></span><br>
+        <span style="font-size:12px;color:#64748b;">👤 ${a.student} · 📅 ${a.date} · Bloc ${a.block}</span><br>
+        <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">
+          <span class="bc-tag">TX: ${a.tx}</span>
+          <span class="bc-tag">IPFS: ${a.ipfsHash}</span>
+          ${a.revoked?'<span class="bc-tag bc-tag-revoked">⛔ Révoqué</span>':'<span class="bc-tag">✓ Valide</span>'}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <span style="background:${c.bg};color:${c.text};padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;">${bt.level||''}</span>
+        ${!a.revoked?`<button onclick="revokeToken('${a.id}')" style="font-size:11px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:3px 8px;cursor:pointer;">⛔ Révoquer</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function revokeToken(id){
+  const a=state.attributions.find(x=>x.id===id);
+  if(!a) return; a.revoked=true;
+  renderBadgesList(); renderApprenantView();
+  notify('⛔ Badge révoqué — enregistré sur Polygon','#dc2626');
+}
+
+// ============================================================
+// APPRENANT
+// ============================================================
+function onApprenantSearch(){
+  const q=document.getElementById('apprenant-search').value.toLowerCase().trim();
+  const resDiv=document.getElementById('apprenant-search-results');
+  if(!q){resDiv.innerHTML='';return;}
+  const names=new Map();
+  state.attributions.forEach(a=>{if(a.student.toLowerCase().includes(q))names.set(a.wallet,a.student);});
+  Object.entries(state.learners).forEach(([w,l])=>{if(l.name.toLowerCase().includes(q))names.set(w,l.name);});
+  if(!names.size){resDiv.innerHTML='<p style="color:rgba(255,255,255,.6);font-size:13px;margin-top:4px;">Aucun apprenant trouvé.</p>';return;}
+  resDiv.innerHTML=[...names.entries()].map(([wallet,name])=>`
+    <button onclick="selectLearner('${wallet}')" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);color:#1a1a2e;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;margin:4px 4px 0 0;">
+      👤 ${name}
+    </button>`).join('');
+}
+function selectLearner(wallet){
+  state.currentLearnerWallet=wallet;
+  document.getElementById('apprenant-search').value='';
+  document.getElementById('apprenant-search-results').innerHTML='';
+  renderApprenantView();
+  notify('✅ Profil : '+(state.learners[wallet]?.name||wallet.substring(0,14)+'...'));
+}
+function clearSearch(){
+  document.getElementById('apprenant-search').value='';
+  document.getElementById('apprenant-search-results').innerHTML='';
+}
+
+function renderApprenantView(){
+  const wallet  = state.currentLearnerWallet;
+  const learner = state.learners[wallet]||{name:wallet.substring(0,18)+'...', title:'Apprenant SkillBadge'};
+  const myBadges= getLearnerBadges(wallet);
+
+  // Profile
+  document.getElementById('apprenant-profile').innerHTML=`
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,#006B3F,#FFB300);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;">👤</div>
+    <h1 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;">${learner.name}</h1>
+    <p style="color:#64748b;margin-top:4px;font-size:13px;">${learner.title}</p>
+    <div style="margin-top:12px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:10px 14px;max-width:480px;margin-left:auto;margin-right:auto;">
+      <div style="font-size:10px;font-weight:600;color:#065f46;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">🔑 Mon adresse wallet Polygon</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-family:monospace;font-size:11px;color:#166534;word-break:break-all;flex:1;">${wallet}</span>
+        <button onclick="copyWallet('${wallet}')" style="background:#006B3F;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 Copier</button>
+      </div>
+    </div>`;
+
+  // Stats
+  const domains = new Set(myBadges.map(b=>b.badgeType.domain)).size;
+  const expertCount = myBadges.filter(b=>b.badgeType.level==='Expert').length;
+  document.getElementById('apprenant-stats').innerHTML=[
+    [myBadges.length,'Badges obtenus'],[domains,'Domaines couverts'],[expertCount,'Niveaux Expert']
+  ].map(([v,l])=>`
+    <div style="background:#fff;border-radius:18px;padding:20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1);">
+      <div style="font-size:26px;font-weight:900;color:#FFB300;">${v}</div>
+      <div style="margin-top:4px;color:#374151;font-size:13px;">${l}</div>
+    </div>`).join('');
+
+  // Domain tracks
+  renderDomainTracks(wallet);
+
+  // Badges grid — groupés par domaine, triés par niveau
+  const el=document.getElementById('apprenant-badges');
+  if(!myBadges.length){el.innerHTML='<p style="color:#94a3b8;grid-column:1/-1;text-align:center;padding:20px;">Aucun badge reçu.</p>';return;}
+
+  // Tri: par domaine puis par niveau
+  const sorted=[...myBadges].sort((a,b)=>{
+    if(a.badgeType.domain!==b.badgeType.domain) return a.badgeType.domain.localeCompare(b.badgeType.domain);
+    return LEVELS.indexOf(a.badgeType.level)-LEVELS.indexOf(b.badgeType.level);
+  });
+
+  el.innerHTML=sorted.map((b,i)=>{
+    const c=lc(b.badgeType.level);
+    const isLatestInDomain = sorted.filter(x=>x.badgeType.domain===b.badgeType.domain).slice(-1)[0].id===b.id;
+    return `<div class="badge-card-prog pop-in" style="animation-delay:${i*0.06}s;">
+      <div class="level-ribbon" style="background:${c.ribbon};color:${c.text};">${b.badgeType.level}</div>
+      <div style="font-size:30px;margin-bottom:8px;margin-top:4px;">${b.badgeType.emoji}</div>
+      <div style="font-weight:700;font-size:14px;">${b.badgeType.name}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px;">${b.badgeType.org}</div>
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:center;gap:4px;">
+          ${LEVELS.map(lv=>{
+            const earned=myBadges.some(x=>x.badgeType.domain===b.badgeType.domain&&x.badgeType.level===lv);
+            const cl=lc(lv);
+            return `<div title="${lv}" style="width:20px;height:20px;border-radius:50%;background:${earned?cl.fill:'#e5e7eb'};border:2px solid ${earned?cl.fill:'#e5e7eb'};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;">${earned?'✓':''}</div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:4px;">${LEVELS.filter(lv=>myBadges.some(x=>x.badgeType.domain===b.badgeType.domain&&x.badgeType.level===lv)).length}/3 niveaux</div>
+      </div>
+      <div style="margin-top:6px;font-size:10px;font-family:monospace;color:#94a3b8;">📅 ${b.date}</div>
+      ${isLatestInDomain && b.badgeType.level!=='Expert' ? `<div class="upgrade-banner">⬆️ Niveau ${LEVELS[LEVELS.indexOf(b.badgeType.level)+1]} disponible !</div>` : ''}
+      ${b.badgeType.level==='Expert'&&isLatestInDomain ? `<div style="background:#e8f5e9;border-radius:10px;padding:6px 10px;margin-top:8px;font-size:11px;color:#2e7d32;font-weight:700;">🏆 Niveau maximum atteint !</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDomainTracks(wallet){
+  const allDomains = getAllDomains();
+  const myBadges   = getLearnerBadges(wallet);
+  const activeDomains = allDomains.filter(d=>myBadges.some(b=>b.badgeType.domain===d.domain));
+
+  if(!activeDomains.length){
+    document.getElementById('domain-tracks').innerHTML='<p style="color:#94a3b8;font-size:13px;">Aucun parcours démarré.</p>';
+    return;
+  }
+
+  document.getElementById('domain-tracks').innerHTML = activeDomains.map(d=>{
+    const prog = getDomainProgress(wallet, d.domain);
+    const pct  = LEVEL_PCT[prog.currentLevel]||0;
+    const fillColor = lc(prog.currentLevel||'Débutant').fill;
+
+    const stepsHtml = LEVELS.map(lv=>{
+      const earned = prog.earnedLevels.includes(lv);
+      const isCurrent = prog.currentLevel===lv;
+      const cls = earned ? 'done' : isCurrent ? 'active' : 'locked';
+      const cl  = lc(lv);
+      return `<div class="level-step ${cls}">
+        <div class="step-circle ${cls}" style="${earned?'background:'+cl.fill+';border-color:'+cl.fill:isCurrent?'background:#FFB300;border-color:#FFB300':''}">
+          ${earned?'✓':isCurrent?'●':'○'}
+        </div>
+        <div class="step-label ${cls}">${lv}</div>
+        ${earned?`<div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:2px;">${myBadges.filter(b=>b.badgeType.domain===d.domain&&b.badgeType.level===lv).map(b=>b.date).join('')}</div>`:''}
+      </div>`;
+    }).join('');
+
+    return `<div class="domain-track fade-in">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">${d.emoji}</span>
+          <div>
+            <div style="font-weight:700;font-size:15px;">${d.name}</div>
+            <div style="font-size:11px;color:#94a3b8;">Domaine : ${d.domain}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          ${prog.isComplete
+            ? `<span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;">🏆 Parcours complet !</span>`
+            : prog.nextLevel
+              ? `<span style="background:#fff3e0;color:#f57c00;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;">⬆️ Prochain : ${prog.nextLevel}</span>`
+              : ''}
+        </div>
+      </div>
+      <div style="margin-top:14px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:4px;">
+          <span>Progression globale</span><span>${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fillColor};"></div></div>
+      </div>
+      <div class="level-steps">${stepsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// MODAL ATTRIBUER — avec suggestion de niveau
+// ============================================================
+function openAttributeModal(){
+  populateDomainSelect();
+  currentGeneratedWallet=generateWallet();
+  document.getElementById('generatedWallet').textContent=currentGeneratedWallet;
+  document.getElementById('studentName').value='';
+  document.getElementById('level-suggestion-box').innerHTML='';
+  document.getElementById('attributeModal').style.display='flex';
+}
+function closeAttributeModal(){ document.getElementById('attributeModal').style.display='none'; }
+
+function populateDomainSelect(){
+  const domains=getAllDomains();
+  document.getElementById('selectDomain').innerHTML=domains.map(d=>`<option value="${d.domain}">${d.emoji} ${d.name} (${d.domain})</option>`).join('');
+  onDomainChange();
+}
+
+function onDomainChange(){
+  const domain = document.getElementById('selectDomain').value;
+  const name   = document.getElementById('studentName').value.trim();
+  // Cherche si cet apprenant (par nom) a déjà un badge dans ce domaine
+  const matchWallet = findWalletByName(name);
+  let suggestedLevel = 'Débutant';
+  let suggestion = '';
+
+  if(matchWallet){
+    const prog = getDomainProgress(matchWallet, domain);
+    if(prog.isComplete){
+      suggestion = `<div style="background:#e8f5e9;border-radius:10px;padding:10px 14px;font-size:12px;color:#2e7d32;font-weight:600;">🏆 ${name} a déjà atteint le niveau Expert dans ce domaine. Parcours complet !</div>`;
+      // Désactive le bouton
+    } else if(prog.nextLevel){
+      suggestedLevel = prog.nextLevel;
+      const c = lc(prog.nextLevel);
+      suggestion = `<div style="background:${c.bg};border-radius:10px;padding:10px 14px;font-size:12px;color:${c.text};font-weight:600;border:1px solid ${c.fill}20;">
+        ⬆️ ${name} est au niveau <strong>${prog.currentLevel}</strong> dans ce domaine.<br>Niveau suggéré : <strong>${prog.nextLevel}</strong>
+      </div>`;
+    } else {
+      const c = lc('Débutant');
+      suggestion = `<div style="background:${c.bg};border-radius:10px;padding:10px 14px;font-size:12px;color:${c.text};font-weight:600;">
+        🆕 ${name} n'a pas encore de badge dans ce domaine. Niveau suggéré : <strong>Débutant</strong>
+      </div>`;
+    }
+  }
+
+  document.getElementById('level-suggestion-box').innerHTML=suggestion;
+
+  // Filtre les badges du bon domaine et niveau suggéré
+  const filtered = state.badgeTypes.filter(b=>b.domain===domain&&(matchWallet?b.level===suggestedLevel:true));
+  const sel = document.getElementById('selectBadgeType');
+  sel.innerHTML = filtered.length
+    ? filtered.map(b=>`<option value="${b.id}">${b.emoji} ${b.name} — ${b.level}</option>`).join('')
+    : state.badgeTypes.filter(b=>b.domain===domain).map(b=>`<option value="${b.id}">${b.emoji} ${b.name} — ${b.level}</option>`).join('');
+}
+
+function onStudentNameInput(){
+  currentGeneratedWallet=generateWallet();
+  document.getElementById('generatedWallet').textContent=currentGeneratedWallet;
+  // Re-check domain suggestion
+  onDomainChange();
+}
+
+function findWalletByName(name){
+  if(!name) return null;
+  const n=name.toLowerCase();
+  // Check learners registry
+  for(const [w,l] of Object.entries(state.learners)){
+    if(l.name.toLowerCase().includes(n)||n.includes(l.name.toLowerCase().split(' ')[0])) return w;
+  }
+  // Check attributions
+  const a=state.attributions.find(a=>a.student.toLowerCase().includes(n)||n.includes(a.student.toLowerCase().split(' ')[0]));
+  return a?a.wallet:null;
+}
+
+function attributeBadge(){
+  const badgeTypeId = document.getElementById('selectBadgeType').value;
+  const name        = document.getElementById('studentName').value.trim();
+  if(!name){notify('⚠️ Veuillez saisir le nom de l\'apprenant','#f59e0b');return;}
+
+  const bt          = getBT(badgeTypeId);
+  const matchWallet = findWalletByName(name);
+
+  // Vérifie si le niveau est déjà obtenu
+  if(matchWallet){
+    const prog = getDomainProgress(matchWallet, bt.domain);
+    if(prog.earnedLevels.includes(bt.level)){
+      notify('⚠️ '+name+' a déjà le niveau '+bt.level+' dans ce domaine !','#f59e0b');
+      return;
+    }
+    if(bt.level==='Intermédiaire'&&!prog.earnedLevels.includes('Débutant')){
+      notify('⚠️ '+name+' doit d\'abord obtenir le niveau Débutant !','#f59e0b');
+      return;
+    }
+    if(bt.level==='Expert'&&!prog.earnedLevels.includes('Intermédiaire')){
+      notify('⚠️ '+name+' doit d\'abord obtenir le niveau Intermédiaire !','#f59e0b');
+      return;
+    }
+  }
+
+  const wallet = matchWallet || currentGeneratedWallet;
+  const id     = 'tok'+Date.now();
+  const token  = { id, badgeTypeId, student:name, wallet,
+    date:new Date().toISOString().split('T')[0],
+    block:randomBlock(), tx:randomTx(), ipfsHash:randomIpfs(), revoked:false };
+  state.attributions.push(token);
+  if(!state.learners[wallet]) state.learners[wallet]={name, title:'Apprenant SkillBadge'};
+
+  closeAttributeModal();
+  renderAll();
+  // Auto-switch to apprenant view
+  state.currentLearnerWallet=wallet;
+  notify('✅ Badge '+bt.name+' niveau '+bt.level+' émis pour '+name+' — Bloc '+token.block);
+}
+
+// ============================================================
+// MODAL CRÉER
+// ============================================================
+function openCreateModal()  { document.getElementById('createModal').style.display='flex'; }
+function closeCreateModal() { document.getElementById('createModal').style.display='none'; }
+
+function createBadgeType(){
+  const name  = document.getElementById('badgeName').value.trim();
+  const level = document.getElementById('badgeLevel').value;
+  const org   = document.getElementById('badgeOrg').value.trim()||'Centre de formation';
+  const domain= document.getElementById('badgeDomain').value.trim()||'general';
+  const emoji = document.getElementById('badgeEmoji').value.trim()||'🏅';
+  if(!name){notify('⚠️ Veuillez saisir un nom','#f59e0b');return;}
+  state.badgeTypes.push({id:'bt'+Date.now(),name,level,org,domain,emoji});
+  closeCreateModal();
+  ['badgeName','badgeOrg','badgeDomain','badgeEmoji'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+  notify('✅ Badge "'+name+'" ('+level+') créé sur Polygon !');
+}
+
+// ============================================================
+// RECRUTEUR
+// ============================================================
+function verify(){
+  const wallet=document.getElementById('walletInput').value.trim();
+  const results=document.getElementById('results');
+  if(!wallet||wallet.length<6){
+    results.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;text-align:center;color:#ef4444;font-weight:600;">❌ Adresse invalide.</div>';
+    return;
+  }
+  results.innerHTML=`<div style="background:#fff;border-radius:18px;padding:28px;text-align:center;">
+    <div class="spinner" style="margin:0 auto 14px;"></div>
+    <p style="color:#374151;font-size:14px;">Interrogation du smart contract Polygon…</p>
+    <p style="color:#94a3b8;font-size:12px;margin-top:4px;">Vérification ERC-5192 + statut de révocation</p>
+  </div>`;
+  setTimeout(()=>{
+    const matched=state.attributions.filter(a=>a.wallet===wallet).map(a=>({...a,badgeType:getBT(a.badgeTypeId)}));
+    const learner=state.learners[wallet];
+    if(!matched.length){
+      results.innerHTML=`<div style="background:#fff;border-radius:18px;padding:24px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:10px;">🔎</div>
+        <p style="font-weight:700;color:#374151;">Aucun badge trouvé pour ce wallet.</p>
+        <p style="font-size:12px;color:#94a3b8;margin-top:6px;">Vérifiez l'adresse Polygon fournie par l'apprenant.</p>
+      </div>`;
+      return;
+    }
+    // Grouper par domaine pour afficher la progression
+    const domains=new Map();
+    matched.forEach(b=>{
+      const d=b.badgeType.domain||'autre';
+      if(!domains.has(d)) domains.set(d,[]);
+      domains.get(d).push(b);
+    });
+
+    const domainCards=[...domains.entries()].map(([domain,badges])=>{
+      const sorted=[...badges].sort((a,b2)=>LEVELS.indexOf(a.badgeType.level)-LEVELS.indexOf(b2.badgeType.level));
+      const maxBadge=sorted[sorted.length-1];
+      const c=lc(maxBadge.badgeType.level);
+      const earnedLevels=sorted.map(b=>b.badgeType.level);
+      const stepsSmall=LEVELS.map(lv=>{
+        const earned=earnedLevels.includes(lv); const cl=lc(lv);
+        return `<div style="display:flex;align-items:center;gap:4px;font-size:11px;">
+          <div style="width:16px;height:16px;border-radius:50%;background:${earned?cl.fill:'#e5e7eb'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;">${earned?'✓':''}</div>
+          <span style="color:${earned?cl.text:'#94a3b8'};">${lv}</span>
+        </div>`;
+      }).join('');
+      return `<div style="background:#f8fafc;padding:16px;border-radius:14px;border-left:4px solid ${c.fill};">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:22px;">${maxBadge.badgeType.emoji||'🏅'}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px;">${maxBadge.badgeType.name}</div>
+            <div style="font-size:11px;color:#64748b;">${maxBadge.badgeType.org} · ${domain}</div>
+          </div>
+          <span style="margin-left:auto;background:${c.bg};color:${c.text};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">Niveau max : ${maxBadge.badgeType.level}</span>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">${stepsSmall}</div>
+        <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
+          ${sorted.map(b=>`<span class="bc-tag ${b.revoked?'bc-tag-revoked':''}">${b.revoked?'⛔':''} ${b.badgeType.level} · TX: ${b.tx}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    const valid=matched.filter(b=>!b.revoked).length;
+    const revoked=matched.filter(b=>b.revoked).length;
+    results.innerHTML=`<div class="fade-in" style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.15);">
+      <div style="display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:1px solid #f1f5f9;margin-bottom:16px;">
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#006B3F,#FFB300);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👤</div>
+        <div>
+          <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:800;">${learner?.name||'Apprenant'}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;">✓ Vérifié Polygon</span>
+            <span style="background:#e3f2fd;color:#1976d2;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;">${valid} badge(s) valide(s)</span>
+            ${revoked?`<span style="background:#fef2f2;color:#dc2626;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;">${revoked} révoqué(s)</span>`:''}
+          </div>
+        </div>
+      </div>
+      <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:12px;">📊 Progression par domaine</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">${domainCards}</div>
+      <div style="margin-top:16px;padding:12px 14px;background:#e8f5e9;border-radius:10px;font-size:12px;color:#2e7d32;font-weight:500;">
+        ⛓️ ERC-5192 Soulbound · Infalsifiable · Révocabilité tracée · IPFS
+      </div>
+    </div>`;
+  },1600);
+}
+
+// ============================================================
+// PARTAGE
+// ============================================================
+function openShareModal(){
+  const wallet=state.currentLearnerWallet;
+  const link='https://skillbadge.bf/verify/'+wallet;
+  document.getElementById('share-link-preview').textContent=link;
+  document.getElementById('share-wallet-display').textContent=wallet;
+  document.getElementById('shareModal').style.display='flex';
+}
+function closeShareModal(){ document.getElementById('shareModal').style.display='none'; }
+function shareByEmail(){
+  const wallet=state.currentLearnerWallet;
+  const learner=state.learners[wallet]||{name:'Apprenant'};
+  const link='https://skillbadge.bf/verify/'+wallet;
+  window.open('mailto:?subject='+encodeURIComponent('Portfolio SkillBadge — '+learner.name)+'&body='+encodeURIComponent('Bonjour,\n\nVoici mon portfolio certifié SkillBadge :\n\n'+link+'\n\nWallet Polygon : '+wallet+'\n\nCordialement,\n'+learner.name),'_blank');
+  closeShareModal(); notify('✉️ Client mail ouvert !');
+}
+function shareByWhatsApp(){
+  const wallet=state.currentLearnerWallet;
+  const learner=state.learners[wallet]||{name:'Apprenant'};
+  const link='https://skillbadge.bf/verify/'+wallet;
+  window.open('https://wa.me/?text='+encodeURIComponent('👋 Voici mon portfolio SkillBadge certifié sur blockchain Polygon !\n\n🔗 '+link+'\n\n🔑 Wallet : '+wallet),'_blank');
+  closeShareModal(); notify('💬 WhatsApp ouvert !');
+}
+
+function copyWallet(w){
+  navigator.clipboard?.writeText(w).catch(()=>{});
+  notify('📋 Adresse copiée !');
+}
+function copyLink(){
+  navigator.clipboard?.writeText('https://skillbadge.bf/verify/'+state.currentLearnerWallet).catch(()=>{});
+  notify('📋 Lien copié !');
+}
+
+let notifTimer;
+function notify(msg,color='#006B3F'){
+  const el=document.getElementById('notif');
+  el.innerHTML=`<div class="notif-box" style="background:${color};">${msg}</div>`;
+  el.style.display='block';
+  clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>el.style.display='none',4000);
+}
+
+// Init
+document.getElementById('walletInput').value=DEMO_WALLET;
+renderAll();
+</script>
+</body>
+</html>
